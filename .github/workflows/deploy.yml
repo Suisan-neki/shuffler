@@ -36,8 +36,9 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # GitHub Pages のサブパス（例: /shuffler/）を注入
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Upload artifact
         if: github.ref == 'refs/heads/main'

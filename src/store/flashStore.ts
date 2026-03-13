@@ -11,17 +11,18 @@ import {
   deleteImageSet,
 } from '../lib/indexedDB'
 import { shuffle } from '../lib/shuffle'
+import { upsertMemoToCloud, fetchMemosFromCloud } from '../lib/supabaseMemo'
 
 interface FlashStore {
   imageSets: ImageSet[]
   activeSetId: string | null
-  hydrated: boolean           // IndexedDB からの復元が完了したか
+  hydrated: boolean
 
   selectionMode: boolean
   selectedIds: Set<string>
 
   memoPanelOpen: boolean
-  memoPanelImageId: string | null
+  homeMemoImageId: string | null
 
   flashDuration: number
   flashCardCount: CardCount
@@ -32,7 +33,7 @@ interface FlashStore {
   paused: boolean
 
   // --- actions ---
-  hydrate: () => Promise<void>           // 起動時に IndexedDB から復元
+  hydrate: () => Promise<void>
   addImageSet: (set: ImageSet, blobs: Map<string, Blob>) => void
   setActiveSet: (id: string) => void
   updateMemo: (imageId: string, memo: string) => void
@@ -44,9 +45,10 @@ interface FlashStore {
   selectAll: () => void
   deselectAll: () => void
 
-  toggleMemoPanel: () => void
   openMemoPanel: (imageId: string) => void
   closeMemoPanel: () => void
+  toggleMemoPanel: () => void
+  syncMemosFromCloud: () => Promise<void>
 
   setFlashDuration: (duration: number) => void
   setFlashCardCount: (count: CardCount) => void
@@ -66,7 +68,7 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
   selectionMode: false,
   selectedIds: new Set(),
   memoPanelOpen: false,
-  memoPanelImageId: null,
+  homeMemoImageId: null,
   flashDuration: 10,
   flashCardCount: 20,
   repeatMode: false,
@@ -74,7 +76,6 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
   currentIndex: 0,
   paused: false,
 
-  // ── 起動時復元 ──────────────────────────────────────────────────────────
   hydrate: async () => {
     const [storedSets, storedImages, memos] = await Promise.all([
       loadAllImageSets(),
@@ -82,7 +83,6 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
       getAllMemos(),
     ])
 
-    // Blob → BlobURL を再生成
     const sets: ImageSet[] = storedSets.map((s) => ({
       id: s.id,
       name: s.name,
@@ -104,14 +104,12 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
     })
   },
 
-  // ── 画像セット追加 ──────────────────────────────────────────────────────
   addImageSet: (imageSet, blobs) => {
     set((state) => ({
       imageSets: [...state.imageSets, imageSet],
       activeSetId: imageSet.id,
     }))
 
-    // IndexedDB に永続化（非同期・バックグラウンド）
     saveImageSet({ id: imageSet.id, name: imageSet.name }).catch(console.error)
 
     imageSet.images.forEach((img, order) => {
@@ -144,7 +142,10 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
     }))
     const allImages = get().imageSets.flatMap((s) => s.images)
     const target = allImages.find((img) => img.id === imageId)
-    if (target) saveMemo(target.hash, memo).catch(console.error)
+    if (target) {
+      saveMemo(target.hash, memo).catch(console.error)
+      upsertMemoToCloud(target.hash, memo).catch(console.error)
+    }
   },
 
   deleteImages: (ids) => {
@@ -158,10 +159,8 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
       return { imageSets: nextSets, selectionMode: false, selectedIds: new Set() }
     })
 
-    // IndexedDB からも削除し、空になったセットも削除
     ids.forEach((id) => deleteImageRecord(id).catch(console.error))
 
-    // セットが空になったら ImageSet レコードも削除
     const sets = get().imageSets
     sets.forEach((s) => {
       if (s.images.length === 0) {
@@ -190,9 +189,32 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
 
   deselectAll: () => set({ selectedIds: new Set() }),
 
+  openMemoPanel: (imageId) => set({ homeMemoImageId: imageId }),
+  closeMemoPanel: () => set({ homeMemoImageId: null }),
   toggleMemoPanel: () => set((s) => ({ memoPanelOpen: !s.memoPanelOpen })),
-  openMemoPanel: (imageId) => set({ memoPanelOpen: true, memoPanelImageId: imageId }),
-  closeMemoPanel: () => set({ memoPanelOpen: false, memoPanelImageId: null }),
+
+  syncMemosFromCloud: async () => {
+    const cloudMemos = await fetchMemosFromCloud()
+    if (Object.keys(cloudMemos).length === 0) return
+    set((state) => ({
+      imageSets: state.imageSets.map((s) => ({
+        ...s,
+        images: s.images.map((img) =>
+          cloudMemos[img.hash] !== undefined
+            ? { ...img, memo: cloudMemos[img.hash] }
+            : img
+        ),
+      })),
+      sessionImages: state.sessionImages.map((img) =>
+        cloudMemos[img.hash] !== undefined
+          ? { ...img, memo: cloudMemos[img.hash] }
+          : img
+      ),
+    }))
+    for (const [hash, memo] of Object.entries(cloudMemos)) {
+      await saveMemo(hash, memo)
+    }
+  },
 
   setFlashDuration: (duration) => set({ flashDuration: duration }),
   setFlashCardCount: (count) => set({ flashCardCount: count }),

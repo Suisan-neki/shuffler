@@ -124,6 +124,7 @@ export default function ImageGrid() {
     toggleSelect,
     openMemoPanel,
     startSession,
+
     selectAll,
     deselectAll,
     deleteImages,
