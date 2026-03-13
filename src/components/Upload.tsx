@@ -45,6 +45,7 @@ export default function Upload({ onDone }: UploadProps) {
                 src,
                 hash,
                 memo: savedMemo,
+                bookmarked: false,
                 name: `${file.name} - p.${page.pageNumber}`,
               })
               blobMap.set(id, page.blob)
@@ -59,6 +60,7 @@ export default function Upload({ onDone }: UploadProps) {
               src,
               hash,
               memo: savedMemo,
+              bookmarked: false,
               name: file.name,
             })
             blobMap.set(id, file)

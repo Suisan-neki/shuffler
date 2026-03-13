@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, Pause, Play, X, StickyNote } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Pause, Play, X, StickyNote, Star } from 'lucide-react'
 import { useFlashStore } from '../store/flashStore'
 import { useNavigate } from 'react-router-dom'
 
@@ -14,6 +14,7 @@ export default function FlashViewer() {
     endSession,
     toggleMemoPanel,
     memoPanelOpen,
+    toggleBookmark,
     flashDuration,
   } = useFlashStore()
 
@@ -136,12 +137,20 @@ export default function FlashViewer() {
           {currentIndex + 1} / {total}
         </span>
 
-        <button
-          onClick={toggleMemoPanel}
-          className={`p-2 rounded-lg text-gray-400 ${memoPanelOpen ? 'bg-gray-700' : 'hover:bg-gray-800'}`}
-        >
-          <StickyNote size={20} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => toggleBookmark(image.id)}
+            className={`p-2 rounded-lg ${image.bookmarked ? 'text-yellow-400' : 'text-gray-600 hover:text-gray-400'}`}
+          >
+            <Star size={20} fill={image.bookmarked ? 'currentColor' : 'none'} />
+          </button>
+          <button
+            onClick={toggleMemoPanel}
+            className={`p-2 rounded-lg text-gray-400 ${memoPanelOpen ? 'bg-gray-700' : 'hover:bg-gray-800'}`}
+          >
+            <StickyNote size={20} />
+          </button>
+        </div>
       </div>
 
       {/* 画像エリア */}

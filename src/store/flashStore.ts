@@ -2,11 +2,13 @@ import { create } from 'zustand'
 import type { ImageItem, ImageSet, CardCount } from '../types'
 import {
   saveMemo,
+  saveBookmark,
   saveImage,
   saveImageSet,
   loadAllImages,
   loadAllImageSets,
   getAllMemos,
+  getAllBookmarks,
   deleteImageRecord,
   deleteImageSet,
 } from '../lib/indexedDB'
@@ -37,6 +39,7 @@ interface FlashStore {
   addImageSet: (set: ImageSet, blobs: Map<string, Blob>) => void
   setActiveSet: (id: string) => void
   updateMemo: (imageId: string, memo: string) => void
+  toggleBookmark: (imageId: string) => void
   deleteImages: (ids: string[]) => void
 
   enterSelectionMode: () => void
@@ -77,10 +80,11 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
   paused: false,
 
   hydrate: async () => {
-    const [storedSets, storedImages, memos] = await Promise.all([
+    const [storedSets, storedImages, memos, bookmarks] = await Promise.all([
       loadAllImageSets(),
       loadAllImages(),
       getAllMemos(),
+      getAllBookmarks(),
     ])
 
     const sets: ImageSet[] = storedSets.map((s) => ({
@@ -93,6 +97,7 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
           src: URL.createObjectURL(img.blob),
           hash: img.hash,
           memo: memos[img.hash] ?? '',
+          bookmarked: bookmarks.has(img.hash),
           name: img.name,
         })),
     }))
@@ -140,12 +145,33 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
         img.id === imageId ? { ...img, memo } : img
       ),
     }))
-    const allImages = get().imageSets.flatMap((s) => s.images)
-    const target = allImages.find((img) => img.id === imageId)
+    const target = get().imageSets.flatMap((s) => s.images).find((img) => img.id === imageId)
     if (target) {
       saveMemo(target.hash, memo).catch(console.error)
-      upsertMemoToCloud(target.hash, memo).catch(console.error)
+      upsertMemoToCloud(target.hash, memo, target.bookmarked).catch(console.error)
     }
+  },
+
+  toggleBookmark: (imageId) => {
+    const target = get().imageSets.flatMap((s) => s.images).find((img) => img.id === imageId)
+      ?? get().sessionImages.find((img) => img.id === imageId)
+    if (!target) return
+    const newBookmarked = !target.bookmarked
+
+    set((state) => ({
+      imageSets: state.imageSets.map((s) => ({
+        ...s,
+        images: s.images.map((img) =>
+          img.id === imageId ? { ...img, bookmarked: newBookmarked } : img
+        ),
+      })),
+      sessionImages: state.sessionImages.map((img) =>
+        img.id === imageId ? { ...img, bookmarked: newBookmarked } : img
+      ),
+    }))
+
+    saveBookmark(target.hash, newBookmarked).catch(console.error)
+    upsertMemoToCloud(target.hash, target.memo, newBookmarked).catch(console.error)
   },
 
   deleteImages: (ids) => {
@@ -194,25 +220,28 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
   toggleMemoPanel: () => set((s) => ({ memoPanelOpen: !s.memoPanelOpen })),
 
   syncMemosFromCloud: async () => {
-    const cloudMemos = await fetchMemosFromCloud()
-    if (Object.keys(cloudMemos).length === 0) return
+    const cloudRecords = await fetchMemosFromCloud()
+    if (Object.keys(cloudRecords).length === 0) return
+
     set((state) => ({
       imageSets: state.imageSets.map((s) => ({
         ...s,
         images: s.images.map((img) =>
-          cloudMemos[img.hash] !== undefined
-            ? { ...img, memo: cloudMemos[img.hash] }
+          cloudRecords[img.hash] !== undefined
+            ? { ...img, memo: cloudRecords[img.hash].memo, bookmarked: cloudRecords[img.hash].bookmarked }
             : img
         ),
       })),
       sessionImages: state.sessionImages.map((img) =>
-        cloudMemos[img.hash] !== undefined
-          ? { ...img, memo: cloudMemos[img.hash] }
+        cloudRecords[img.hash] !== undefined
+          ? { ...img, memo: cloudRecords[img.hash].memo, bookmarked: cloudRecords[img.hash].bookmarked }
           : img
       ),
     }))
-    for (const [hash, memo] of Object.entries(cloudMemos)) {
-      await saveMemo(hash, memo)
+
+    for (const [hash, record] of Object.entries(cloudRecords)) {
+      await saveMemo(hash, record.memo)
+      await saveBookmark(hash, record.bookmarked)
     }
   },
 

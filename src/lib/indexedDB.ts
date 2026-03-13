@@ -1,13 +1,14 @@
 /**
  * IndexedDB スキーマ
  *
- * memos    : { hash: string, memo: string }
- * images   : { id: string, hash: string, name: string, setId: string, blob: Blob, order: number }
- * imageSets: { id: string, name: string }
+ * memos     : { hash: string, memo: string }
+ * images    : { id: string, hash: string, name: string, setId: string, blob: Blob, order: number }
+ * imageSets : { id: string, name: string }
+ * bookmarks : { hash: string }
  */
 
 const DB_NAME = 'flashcard-db'
-const DB_VERSION = 2   // memos のみ(v1) → images / imageSets 追加(v2)
+const DB_VERSION = 3   // v3: bookmarks ストア追加
 
 let db: IDBDatabase | null = null
 
@@ -29,6 +30,9 @@ function openDB(): Promise<IDBDatabase> {
       }
       if (!database.objectStoreNames.contains('imageSets')) {
         database.createObjectStore('imageSets', { keyPath: 'id' })
+      }
+      if (!database.objectStoreNames.contains('bookmarks')) {
+        database.createObjectStore('bookmarks', { keyPath: 'hash' })
       }
     }
 
@@ -97,6 +101,28 @@ export async function getMemo(hash: string): Promise<string> {
   })
 }
 
+export async function getAllMemos(): Promise<Record<string, string>> {
+  const all = await getAll<{ hash: string; memo: string }>('memos')
+  const map: Record<string, string> = {}
+  for (const r of all) map[r.hash] = r.memo
+  return map
+}
+
+// ────────── ブックマーク ──────────────────────────────────────────────────────
+
+export async function saveBookmark(hash: string, bookmarked: boolean): Promise<void> {
+  if (bookmarked) {
+    return put('bookmarks', { hash })
+  } else {
+    return deleteRecord('bookmarks', hash)
+  }
+}
+
+export async function getAllBookmarks(): Promise<Set<string>> {
+  const all = await getAll<{ hash: string }>('bookmarks')
+  return new Set(all.map((r) => r.hash))
+}
+
 // ────────── 画像セット ────────────────────────────────────────────────────────
 
 export interface StoredImageSet {
@@ -124,7 +150,7 @@ export interface StoredImage {
   name: string
   setId: string
   blob: Blob
-  order: number   // グリッド表示順を保持
+  order: number
 }
 
 export async function saveImage(img: StoredImage): Promise<void> {
@@ -138,11 +164,4 @@ export async function loadAllImages(): Promise<StoredImage[]> {
 
 export async function deleteImageRecord(id: string): Promise<void> {
   return deleteRecord('images', id)
-}
-
-export async function getAllMemos(): Promise<Record<string, string>> {
-  const all = await getAll<{ hash: string; memo: string }>('memos')
-  const map: Record<string, string> = {}
-  for (const r of all) map[r.hash] = r.memo
-  return map
 }

@@ -3,6 +3,7 @@ export interface ImageItem {
   src: string       // BlobURL
   hash: string
   memo: string
+  bookmarked: boolean
   name: string      // 元ファイル名 or "page N"
 }
 

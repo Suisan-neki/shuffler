@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { Check, StickyNote, Trash2 } from 'lucide-react'
+import { Check, StickyNote, Star, Trash2 } from 'lucide-react'
 import { useFlashStore } from '../store/flashStore'
 import type { ImageItem } from '../types'
 
@@ -84,12 +84,19 @@ function ImageCard({
           </div>
         )}
 
-        {/* メモアイコン */}
-        {image.memo && (
-          <div className="absolute bottom-2 right-2 w-5 h-5 bg-yellow-500/80 rounded-full flex items-center justify-center">
-            <StickyNote size={10} className="text-gray-900" />
-          </div>
-        )}
+        {/* アイコン群 */}
+        <div className="absolute bottom-2 right-2 flex gap-1">
+          {image.bookmarked && (
+            <div className="w-5 h-5 bg-yellow-400/90 rounded-full flex items-center justify-center">
+              <Star size={10} className="text-gray-900" fill="currentColor" />
+            </div>
+          )}
+          {image.memo && (
+            <div className="w-5 h-5 bg-blue-500/80 rounded-full flex items-center justify-center">
+              <StickyNote size={10} className="text-white" />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* メモボタン（非選択モード時のみ） */}
@@ -131,9 +138,12 @@ export default function ImageGrid() {
   } = useFlashStore()
 
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [bookmarkFilter, setBookmarkFilter] = useState(false)
 
   const activeSet = imageSets.find((s) => s.id === activeSetId)
-  const images = activeSet?.images ?? []
+  const allImages = activeSet?.images ?? []
+  const bookmarkedImages = allImages.filter((img) => img.bookmarked)
+  const images = bookmarkFilter ? bookmarkedImages : allImages
 
   const handleLongPress = useCallback(
     (id: string) => {
@@ -179,10 +189,25 @@ export default function ImageGrid() {
     <div className="flex flex-col gap-4">
       {/* ツールバー */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-gray-400 text-sm">
-          {images.length} 枚
-          {selectionMode && selectedIds.size > 0 && ` / ${selectedIds.size} 枚選択中`}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-gray-400 text-sm">
+            {images.length} 枚
+            {selectionMode && selectedIds.size > 0 && ` / ${selectedIds.size} 枚選択中`}
+          </p>
+          {bookmarkedImages.length > 0 && (
+            <button
+              onClick={() => setBookmarkFilter((v) => !v)}
+              className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-colors ${
+                bookmarkFilter
+                  ? 'bg-yellow-400/20 text-yellow-400 border border-yellow-400/40'
+                  : 'bg-gray-800 text-gray-400 hover:text-yellow-400'
+              }`}
+            >
+              <Star size={11} fill={bookmarkFilter ? 'currentColor' : 'none'} />
+              苦手のみ ({bookmarkedImages.length})
+            </button>
+          )}
+        </div>
 
         <div className="flex gap-2">
           {selectionMode ? (
