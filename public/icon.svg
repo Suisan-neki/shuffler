@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="100" fill="#1d4ed8"/>
+  <rect x="80" y="120" width="352" height="240" rx="24" fill="white" opacity="0.15"/>
+  <rect x="96" y="136" width="320" height="208" rx="16" fill="white" opacity="0.2"/>
+  <rect x="112" y="152" width="288" height="176" rx="12" fill="#1e3a8a"/>
+  <!-- card stack effect -->
+  <rect x="120" y="340" width="272" height="6" rx="3" fill="white" opacity="0.3"/>
+  <rect x="136" y="350" width="240" height="6" rx="3" fill="white" opacity="0.2"/>
+  <!-- lightning / flash symbol -->
+  <path d="M280 176 L236 268 L264 268 L232 352 L312 244 L280 244 Z" fill="white"/>
+</svg>
