@@ -12,7 +12,8 @@ export default function FlashViewer() {
     prevCard,
     togglePause,
     endSession,
-    openMemoPanel,
+    toggleMemoPanel,
+    memoPanelOpen,
     flashDuration,
   } = useFlashStore()
 
@@ -136,8 +137,8 @@ export default function FlashViewer() {
         </span>
 
         <button
-          onClick={() => openMemoPanel(image.id)}
-          className="p-2 rounded-lg hover:bg-gray-800 text-gray-400"
+          onClick={toggleMemoPanel}
+          className={`p-2 rounded-lg text-gray-400 ${memoPanelOpen ? 'bg-gray-700' : 'hover:bg-gray-800'}`}
         >
           <StickyNote size={20} />
         </button>
