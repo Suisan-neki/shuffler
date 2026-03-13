@@ -12,7 +12,7 @@ export default function App() {
   }, [hydrate])
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/flash" element={<Flash />} />
