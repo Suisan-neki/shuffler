@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, Plus, User, LogOut, LogIn } from 'lucide-react'
+import { BookOpen, Plus, User, LogOut, LogIn, Trash2 } from 'lucide-react'
 import Upload from '../components/Upload'
 import ImageGrid from '../components/ImageGrid'
 import MemoPanel from '../components/MemoPanel'
@@ -10,7 +10,7 @@ import { useAuthStore } from '../store/authStore'
 
 export default function Home() {
   const navigate = useNavigate()
-  const { imageSets, activeSetId, setActiveSet, sessionImages, hydrated } = useFlashStore()
+  const { imageSets, activeSetId, setActiveSet, sessionImages, hydrated, deleteImages } = useFlashStore()
   const { user, signOut } = useAuthStore()
   const [showUserMenu, setShowUserMenu] = useState(false)
 
@@ -48,6 +48,19 @@ export default function Home() {
                   </option>
                 ))}
               </select>
+            )}
+            {/* セット削除 */}
+            {hasImages && activeSet && (
+              <button
+                onClick={() => {
+                  if (confirm(`「${activeSet.name}」を削除しますか？`)) {
+                    deleteImages(activeSet.images.map((img) => img.id))
+                  }
+                }}
+                className="p-2 rounded-lg text-gray-600 hover:text-red-400 hover:bg-gray-800"
+              >
+                <Trash2 size={16} />
+              </button>
             )}
 
             {/* ユーザーメニュー */}

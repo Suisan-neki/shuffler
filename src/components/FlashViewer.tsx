@@ -125,7 +125,7 @@ export default function FlashViewer() {
       </div>
 
       {/* ヘッダー */}
-      <div className="flex items-center justify-between px-4 py-2 bg-black/80">
+      <div className="flex items-center justify-between px-4 py-2 bg-black/80" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 8px)' }}>
         <button
           onClick={() => { endSession(); navigate('/') }}
           className="p-2 rounded-lg hover:bg-gray-800 text-gray-400"
@@ -198,7 +198,7 @@ export default function FlashViewer() {
       </div>
 
       {/* ショートカットヒント */}
-      <div className="text-center pb-3 text-gray-700 text-xs">
+      <div className="text-center text-gray-700 text-xs" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
         Space / →: 次へ　←: 戻る　P: 一時停止　Esc: 終了
       </div>
     </div>
