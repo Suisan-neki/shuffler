@@ -14,6 +14,13 @@ import {
 } from '../lib/indexedDB'
 import { shuffle } from '../lib/shuffle'
 import { upsertMemoToCloud, fetchMemosFromCloud } from '../lib/supabaseMemo'
+import {
+  uploadImageToCloud,
+  saveImageMetadataToCloud,
+  fetchImageMetadataFromCloud,
+  downloadImageFromCloud,
+} from '../lib/supabaseImages'
+import { supabase } from '../lib/supabase'
 
 interface FlashStore {
   imageSets: ImageSet[]
@@ -52,6 +59,7 @@ interface FlashStore {
   closeMemoPanel: () => void
   toggleMemoPanel: () => void
   syncMemosFromCloud: () => Promise<void>
+  syncImagesFromCloud: () => Promise<void>
 
   setFlashDuration: (duration: number) => void
   setFlashCardCount: (count: CardCount) => void
@@ -129,6 +137,24 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
         order,
       }).catch(console.error)
     })
+
+    // クラウドにもアップロード（ログイン中のみ）
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      imageSet.images.forEach((img, order) => {
+        const blob = blobs.get(img.id)
+        if (!blob) return
+        uploadImageToCloud(user.id, img.hash, blob).catch(console.error)
+        saveImageMetadataToCloud(user.id, {
+          id: img.id,
+          hash: img.hash,
+          name: img.name,
+          setId: imageSet.id,
+          setName: imageSet.name,
+          order,
+        }).catch(console.error)
+      })
+    }).catch(console.error)
   },
 
   setActiveSet: (id) => set({ activeSetId: id }),
@@ -243,6 +269,40 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
       await saveMemo(hash, record.memo)
       await saveBookmark(hash, record.bookmarked)
     }
+  },
+
+  syncImagesFromCloud: async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const cloudMetas = await fetchImageMetadataFromCloud()
+    if (cloudMetas.length === 0) return
+
+    const localImages = await loadAllImages()
+    const localHashSet = new Set(localImages.map((img) => img.hash))
+
+    // セットごとにグループ化
+    const setMap = new Map<string, { name: string; metas: typeof cloudMetas }>()
+    for (const meta of cloudMetas) {
+      if (!setMap.has(meta.setId)) setMap.set(meta.setId, { name: meta.setName, metas: [] })
+      setMap.get(meta.setId)!.metas.push(meta)
+    }
+
+    let downloaded = false
+    for (const [setId, { name, metas }] of setMap) {
+      const missing = metas.filter((m) => !localHashSet.has(m.hash))
+      if (missing.length === 0) continue
+
+      await saveImageSet({ id: setId, name })
+      for (const meta of missing) {
+        const blob = await downloadImageFromCloud(user.id, meta.hash)
+        if (!blob) continue
+        await saveImage({ id: meta.id, hash: meta.hash, name: meta.name, setId: meta.setId, blob, order: meta.order })
+        downloaded = true
+      }
+    }
+
+    if (downloaded) await get().hydrate()
   },
 
   setFlashDuration: (duration) => set({ flashDuration: duration }),

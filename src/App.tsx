@@ -9,15 +9,17 @@ import { useAuthStore } from './store/authStore'
 export default function App() {
   const hydrate = useFlashStore((s) => s.hydrate)
   const syncMemosFromCloud = useFlashStore((s) => s.syncMemosFromCloud)
+  const syncImagesFromCloud = useFlashStore((s) => s.syncImagesFromCloud)
   const initAuth = useAuthStore((s) => s.init)
 
   useEffect(() => {
     hydrate().catch(console.error)
     const unsub = initAuth(() => {
       syncMemosFromCloud().catch(console.error)
+      syncImagesFromCloud().catch(console.error)
     })
     return unsub
-  }, [hydrate, initAuth, syncMemosFromCloud])
+  }, [hydrate, initAuth, syncMemosFromCloud, syncImagesFromCloud])
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>

@@ -27,7 +27,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-950">
       {/* ヘッダー */}
-      <header className="sticky top-0 z-30 bg-gray-950/90 backdrop-blur border-b border-gray-800">
+      <header className="sticky top-0 z-30 bg-gray-950/90 backdrop-blur border-b border-gray-800" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BookOpen size={20} className="text-blue-400" />
