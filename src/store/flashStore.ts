@@ -21,6 +21,7 @@ interface FlashStore {
   selectedIds: Set<string>
 
   memoPanelOpen: boolean
+  memoPanelImageId: string | null
 
   flashDuration: number
   flashCardCount: CardCount
@@ -44,6 +45,7 @@ interface FlashStore {
   deselectAll: () => void
 
   toggleMemoPanel: () => void
+  openMemoPanel: (imageId: string) => void
   closeMemoPanel: () => void
 
   setFlashDuration: (duration: number) => void
@@ -64,6 +66,7 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
   selectionMode: false,
   selectedIds: new Set(),
   memoPanelOpen: false,
+  memoPanelImageId: null,
   flashDuration: 10,
   flashCardCount: 20,
   repeatMode: false,
@@ -188,7 +191,8 @@ export const useFlashStore = create<FlashStore>((set, get) => ({
   deselectAll: () => set({ selectedIds: new Set() }),
 
   toggleMemoPanel: () => set((s) => ({ memoPanelOpen: !s.memoPanelOpen })),
-  closeMemoPanel: () => set({ memoPanelOpen: false }),
+  openMemoPanel: (imageId) => set({ memoPanelOpen: true, memoPanelImageId: imageId }),
+  closeMemoPanel: () => set({ memoPanelOpen: false, memoPanelImageId: null }),
 
   setFlashDuration: (duration) => set({ flashDuration: duration }),
   setFlashCardCount: (count) => set({ flashCardCount: count }),
