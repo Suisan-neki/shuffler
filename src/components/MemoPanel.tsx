@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useFlashStore } from '../store/flashStore'
 
 export default function MemoPanel() {
-  const { sessionImages, currentIndex, memoPanelOpen, closeMemoPanel, updateMemo } = useFlashStore()
+  const { imageSets, sessionImages, currentIndex, memoPanelOpen, memoPanelImageId, closeMemoPanel, updateMemo } = useFlashStore()
 
-  const image = sessionImages[currentIndex]
+  const allImages = useMemo(() => imageSets.flatMap((s) => s.images), [imageSets])
+  const image = (memoPanelImageId
+    ? allImages.find((img) => img.id === memoPanelImageId)
+    : null) ?? sessionImages[currentIndex]
 
   const [localMemo, setLocalMemo] = useState(image?.memo ?? '')
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
