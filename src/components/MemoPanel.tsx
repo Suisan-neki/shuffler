@@ -85,7 +85,7 @@ export default function MemoPanel() {
           memoPanelOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-gray-800">
+        <div className="flex items-center justify-between px-4 pb-2 border-b border-gray-800" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)' }}>
           <p className="text-sm text-gray-400 truncate max-w-[80%]">{flashImage.name}</p>
           <button onClick={toggleMemoPanel} className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400">
             <X size={18} />
