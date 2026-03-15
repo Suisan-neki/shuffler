@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from 'react'
-import { Check, StickyNote, Star, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Check, ChevronLeft, ChevronRight, StickyNote, Star, Trash2, X } from 'lucide-react'
 import { useFlashStore } from '../store/flashStore'
 import type { ImageItem } from '../types'
 
@@ -10,6 +10,7 @@ interface ImageCardProps {
   onLongPress: () => void
   onTap: () => void
   onMemo: () => void
+  onDoubleClick: () => void
 }
 
 function ImageCard({
@@ -19,6 +20,7 @@ function ImageCard({
   onLongPress,
   onTap,
   onMemo,
+  onDoubleClick,
 }: ImageCardProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const movedRef = useRef(false)
@@ -60,6 +62,7 @@ function ImageCard({
         onTouchEnd={endPress}
         onTouchMove={cancelPress}
         onClick={onTap}
+        onDoubleClick={onDoubleClick}
       >
         <img
           src={image.src}
@@ -139,6 +142,20 @@ export default function ImageGrid() {
 
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [bookmarkFilter, setBookmarkFilter] = useState(false)
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null)
+
+  const previewImage = previewIndex !== null ? images[previewIndex] : null
+
+  useEffect(() => {
+    if (previewIndex === null) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPreviewIndex(null)
+      else if (e.key === 'ArrowRight') setPreviewIndex((i) => (i !== null && i < images.length - 1 ? i + 1 : i))
+      else if (e.key === 'ArrowLeft') setPreviewIndex((i) => (i !== null && i > 0 ? i - 1 : i))
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [previewIndex, images.length])
 
   const activeSet = imageSets.find((s) => s.id === activeSetId)
   const allImages = activeSet?.images ?? []
@@ -264,7 +281,7 @@ export default function ImageGrid() {
 
       {/* グリッド */}
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
-        {images.map((img) => (
+        {images.map((img, idx) => (
           <ImageCard
             key={img.id}
             image={img}
@@ -273,9 +290,68 @@ export default function ImageGrid() {
             onLongPress={() => handleLongPress(img.id)}
             onTap={() => handleTap(img.id)}
             onMemo={() => openMemoPanel(img.id)}
+            onDoubleClick={() => setPreviewIndex(idx)}
           />
         ))}
       </div>
+
+      {/* ライトボックス */}
+      {previewImage && previewIndex !== null && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          onClick={() => setPreviewIndex(null)}
+        >
+          {/* 閉じるボタン */}
+          <button
+            className="absolute top-4 right-4 p-2 rounded-full bg-gray-800/80 text-white hover:bg-gray-700"
+            onClick={() => setPreviewIndex(null)}
+          >
+            <X size={20} />
+          </button>
+
+          {/* 枚数 */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-gray-400 text-sm font-mono">
+            {previewIndex + 1} / {images.length}
+          </div>
+
+          {/* 画像 */}
+          <img
+            src={previewImage.src}
+            alt={previewImage.name}
+            className="max-w-full max-h-full object-contain select-none"
+            style={{ maxHeight: '90vh', maxWidth: '90vw' }}
+            onClick={(e) => e.stopPropagation()}
+            draggable={false}
+          />
+
+          {/* 前へ */}
+          {previewIndex > 0 && (
+            <button
+              className="absolute left-3 p-2 rounded-full bg-gray-800/80 text-white hover:bg-gray-700"
+              onClick={(e) => { e.stopPropagation(); setPreviewIndex(previewIndex - 1) }}
+            >
+              <ChevronLeft size={24} />
+            </button>
+          )}
+
+          {/* 次へ */}
+          {previewIndex < images.length - 1 && (
+            <button
+              className="absolute right-3 p-2 rounded-full bg-gray-800/80 text-white hover:bg-gray-700"
+              onClick={(e) => { e.stopPropagation(); setPreviewIndex(previewIndex + 1) }}
+            >
+              <ChevronRight size={24} />
+            </button>
+          )}
+
+          {/* メモ表示 */}
+          {previewImage.memo && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[min(400px,90vw)] px-4 py-3 bg-gray-900/90 rounded-2xl text-sm text-gray-300">
+              {previewImage.memo}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
