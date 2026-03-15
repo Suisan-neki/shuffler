@@ -144,6 +144,11 @@ export default function ImageGrid() {
   const [bookmarkFilter, setBookmarkFilter] = useState(false)
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
 
+  const activeSet = imageSets.find((s) => s.id === activeSetId)
+  const allImages = activeSet?.images ?? []
+  const bookmarkedImages = allImages.filter((img) => img.bookmarked)
+  const images = bookmarkFilter ? bookmarkedImages : allImages
+
   const previewImage = previewIndex !== null ? images[previewIndex] : null
 
   useEffect(() => {
@@ -156,11 +161,6 @@ export default function ImageGrid() {
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [previewIndex, images.length])
-
-  const activeSet = imageSets.find((s) => s.id === activeSetId)
-  const allImages = activeSet?.images ?? []
-  const bookmarkedImages = allImages.filter((img) => img.bookmarked)
-  const images = bookmarkFilter ? bookmarkedImages : allImages
 
   const handleLongPress = useCallback(
     (id: string) => {
