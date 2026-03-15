@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, ChevronLeft, ChevronRight, StickyNote, Star, Trash2, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, StickyNote, Star, Trash2, X, FileText } from 'lucide-react'
 import { useFlashStore } from '../store/flashStore'
 import type { ImageItem } from '../types'
 
@@ -133,6 +133,8 @@ export default function ImageGrid() {
     exitSelectionMode,
     toggleSelect,
     openMemoPanel,
+    closeMemoPanel,
+    homeMemoImageId,
     startSession,
 
     selectAll,
@@ -290,7 +292,7 @@ export default function ImageGrid() {
             onLongPress={() => handleLongPress(img.id)}
             onTap={() => handleTap(img.id)}
             onMemo={() => openMemoPanel(img.id)}
-            onDoubleClick={() => { setPreviewIndex(idx); openMemoPanel(img.id) }}
+            onDoubleClick={() => setPreviewIndex(idx)}
           />
         ))}
       </div>
@@ -307,6 +309,23 @@ export default function ImageGrid() {
             onClick={() => setPreviewIndex(null)}
           >
             <X size={20} />
+          </button>
+
+          {/* メモトグルボタン */}
+          <button
+            className={`absolute top-4 right-16 p-2 rounded-full transition-colors ${
+              homeMemoImageId === previewImage.id
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-800/80 text-gray-300 hover:bg-gray-700'
+            }`}
+            onClick={(e) => {
+              e.stopPropagation()
+              homeMemoImageId === previewImage.id
+                ? closeMemoPanel()
+                : openMemoPanel(previewImage.id)
+            }}
+          >
+            <FileText size={20} />
           </button>
 
           {/* 枚数 */}
