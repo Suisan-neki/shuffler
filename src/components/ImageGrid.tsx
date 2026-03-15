@@ -290,7 +290,7 @@ export default function ImageGrid() {
             onLongPress={() => handleLongPress(img.id)}
             onTap={() => handleTap(img.id)}
             onMemo={() => openMemoPanel(img.id)}
-            onDoubleClick={() => setPreviewIndex(idx)}
+            onDoubleClick={() => { setPreviewIndex(idx); openMemoPanel(img.id) }}
           />
         ))}
       </div>
@@ -344,12 +344,6 @@ export default function ImageGrid() {
             </button>
           )}
 
-          {/* メモ表示 */}
-          {previewImage.memo && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[min(400px,90vw)] px-4 py-3 bg-gray-900/90 rounded-2xl text-sm text-gray-300">
-              {previewImage.memo}
-            </div>
-          )}
         </div>
       )}
     </div>
