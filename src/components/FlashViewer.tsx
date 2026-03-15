@@ -164,13 +164,6 @@ export default function FlashViewer() {
         />
       </div>
 
-      {/* メモ表示 */}
-      {image.memo && (
-        <div className="mx-4 mb-2 px-3 py-2 bg-gray-900/80 rounded-xl text-sm text-gray-300 max-h-24 overflow-y-auto">
-          {image.memo}
-        </div>
-      )}
-
       {/* コントロール */}
       <div className="flex items-center justify-center gap-6 py-4 bg-black">
         <button
